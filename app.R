@@ -20,7 +20,7 @@ ui <- dashboardPage(
     sidebarMenu(id = "tabs",
                 menuItem("เกี่ยวกับข้อมูล", tabName = "intro", icon = icon("info-circle")),
                 menuItem("ชุดข้อมูล", tabName = "overview", icon = icon("th-large")),
-                menuItem("ภาพรวมและความน่าจะาม", tabName = "binomial", icon = icon("calculator"))
+                menuItem("ภาพรวมและความน่าจะเป็น", tabName = "binomial", icon = icon("calculator"))
     )
   ),
   
@@ -30,6 +30,19 @@ ui <- dashboardPage(
               fluidRow(
                 box(title = "บทนำ", width = 12, status = "primary", solidHeader = TRUE,
                     p(style = "font-size: 16px;", "ชุดข้อมูล Glass Identification นี้เป็นข้อมูลที่ใช้ในการจำแนกประเภทของแก้ว โดยมีที่มาจากการสืบสวนทางนิติวิทยาศาสตร์"))
+              ),
+              fluidRow(
+                
+                box(title = "ที่มาของข้อมูล", width = 12, status = "success", solidHeader = TRUE,
+                    
+                    p(style = "font-size: 16px;",
+                      
+                      tags$a(href = "https://www.kaggle.com/datasets/uciml/glass",
+                             
+                             "Glass Identification Dataset on Kaggle",
+                             target = "_blank",
+                             style = "color: blue; text-decoration: underline; font-weight: bold;"))
+                )
               ),
               fluidRow(
                 box(title = "ประเภทของแก้ว", width = 12, status = "info", solidHeader = TRUE,
