@@ -9,10 +9,13 @@ library(bslib)
 file_path <- "glass"
 if(!file.exists(file_path))file_path <- "glass.csv"
 glass_data <- read.csv("glass.csv")
-glass_data$Type <- factor(glass_data$Type, 
-                          levels = c(1, 2, 3, 5, 6, 7),
-                          labels = c("Building_Win_Float", "Building_Win_NonFloat", 
-                                     "Vehicle_Win", "Containers", "Tableware", "Headlamps"))
+if("Type" %in% names(glass_data)) {
+  glass_data$Type <- factor(glass_data$Type, 
+                            levels = c(1, 2, 3, 5, 6, 7),
+                            labels = c("Building_Win_Float", "Building_Win_NonFloat", 
+                                       "Vehicle_Win", "Containers", "Tableware", "Headlamps"))
+}
+
 # [3] UI - Dashboard Layout
 ui <- dashboardPage(
   skin = "blue",
@@ -22,7 +25,8 @@ ui <- dashboardPage(
     sidebarMenu(id = "tabs",
                 menuItem("เกี่ยวกับข้อมูล", tabName = "intro", icon = icon("info-circle")),
                 menuItem("ชุดข้อมูล", tabName = "overview", icon = icon("th-large")),
-                menuItem("ภาพรวมและความน่าจะเป็น", tabName = "binomial", icon = icon("calculator"))
+                # --- เปลี่ยนชื่อเมนูเป็น ปัวซง ---
+                menuItem("การแจกแจงปัวซง", tabName = "poisson", icon = icon("calculator"))
     )
   ),
   
@@ -34,13 +38,9 @@ ui <- dashboardPage(
                     p(style = "font-size: 16px;", "ชุดข้อมูล Glass Identification นี้เป็นข้อมูลที่ใช้ในการจำแนกประเภทของแก้ว โดยมีที่มาจากการสืบสวนทางนิติวิทยาศาสตร์"))
               ),
               fluidRow(
-                
                 box(title = "ที่มาของข้อมูล", width = 12, status = "success", solidHeader = TRUE,
-                    
                     p(style = "font-size: 16px;",
-                      
                       tags$a(href = "https://www.kaggle.com/datasets/uciml/glass",
-                             
                              "Glass Identification Dataset on Kaggle",
                              target = "_blank",
                              style = "color: blue; text-decoration: underline; font-weight: bold;"))
@@ -78,7 +78,6 @@ ui <- dashboardPage(
       tabItem(tabName = "overview",
               fluidRow(
                 box(title = "ตารางแสดงข้อมูลในไฟล์ (Raw Data)", width = 12, status = "success", solidHeader = TRUE,
-                    # --- ส่วนที่ 1: เพิ่มปุ่มกดดาวน์โหลดตรงนี้ ---
                     downloadButton("downloadData", " ดาวน์โหลดไฟล์ CSV", style = "margin-bottom: 15px; background-color: #27ae60; color: white; border: none;"),
                     dataTableOutput("rawDataTable")) 
               ),
@@ -88,57 +87,60 @@ ui <- dashboardPage(
               )
       ),
       
-      tabItem(tabName = "binomial",
+      # ==========================================
+      # --- Tab 4: การแจกแจงแบบปัวซง (แก้ไขใหม่ทั้งหมด) ---
+      # ==========================================
+      tabItem(tabName = "poisson",
               fluidRow(
-                box(title = "ทฤษฎีการแจกแจงแบบทวินาม (Binomial Distribution)", width = 12, status = "info", solidHeader = TRUE,
-                    p(style = "font-size: 16px;", "การแจกแจงความน่าจะเป็นของ X:"),
+                box(title = "ทฤษฎีการแจกแจงแบบปัวซง (Poisson Distribution)", width = 12, status = "info", solidHeader = TRUE,
+                    p(style = "font-size: 16px;", "ใช้เพื่อจำลองเหตุการณ์ที่มีการกระจายตัวแบบสุ่ม โดยสนใจจำนวนครั้งที่เกิดเหตุการณ์ในขอบเขตที่กำหนด เช่น การคาดการณ์จำนวนเศษแก้วเป้าหมายที่จะพบจากการสุ่มตรวจ"),
                     
-                    # วาดกล่องสูตรสีฟ้าอ่อน (ตามรูปภาพเป๊ะๆ ด้วย HTML)
+                    # วาดกล่องสูตรสีฟ้าอ่อนแบบปัวซง
                     div(style = "text-align: center; margin: 15px 0;",
                         HTML('<div style="background-color: #bde0e8; border-radius: 30px; padding: 15px 30px; font-family: \'Times New Roman\', serif; font-size: 24px; color: #000; display: inline-block;">
                           <i>P ( X = x )</i> = 
-                          <span style="font-size: 32px; vertical-align: middle;">(</span>
-                          <span style="display: inline-block; text-align: center; vertical-align: middle; line-height: 1.1; font-size: 20px; font-style: italic; margin: 0 2px;">
-                            n<br>x
-                          </span>
-                          <span style="font-size: 32px; vertical-align: middle;">)</span>
-                          <i>p<sup> x</sup> (1 - p)<sup> n - x</sup></i> &nbsp;&nbsp; ; <i>x = 0, 1, ..., n</i>
+                          <div style="display: inline-block; vertical-align: middle; text-align: center; margin: 0 10px;">
+                            <div style="border-bottom: 2px solid #000; padding-bottom: 2px;"><i>e<sup> -&lambda;</sup> &lambda;<sup> x</sup></i></div>
+                            <div style="padding-top: 2px;"><i>x</i> !</div>
+                          </div>
+                          &nbsp;&nbsp; ; <i>x = 0, 1, 2, ...</i>
                         </div>')
                     ),
                     
-                    # วาดกล่อง X ~ Bin ลูกศร และกล่องข้อความ
+                    # วาดกล่อง X ~ Poi ลูกศร และกล่องข้อความ
                     div(style = "display: flex; align-items: center; justify-content: center; margin-bottom: 20px;",
                         HTML('<div style="background-color: #f4f4f4; border: 2px solid #ccc; padding: 10px 20px; font-weight: bold; font-family: \'Times New Roman\', serif; font-size: 20px; margin-right: 15px;">
-                          X ~ Bin (n, p)
+                          X ~ Poi (&lambda;)
                         </div>
                         <div style="color: #6fb2fb; font-size: 40px; margin-right: 15px; font-weight: bold;">&#10145;</div>
                         <div style="background-color: white; border: 2px solid #a1c4fd; border-radius: 10px; padding: 10px 20px; font-size: 16px; font-weight: bold; box-shadow: 4px 4px 0px #a1c4fd; color: #333;">
-                          มีการแจกแจงแบบทวินามที่มี<br>พารามิเตอร์เท่ากับ n และ p
+                          มีการแจกแจงแบบปัวซงที่มี<br>พารามิเตอร์อัตราเฉลี่ยเท่ากับ &lambda;
                         </div>')
                     ),
                     
-                    # คำอธิบาย
+                    # คำอธิบายตัวแปรปัวซง
                     tags$ul(style = "font-size: 16px; line-height: 1.8; margin-top: 15px;",
-                            tags$li(tags$b("n"), " คือจำนวนครั้งในการทดลอง (จำนวนเศษแก้วที่สุ่มเก็บมา)"),
-                            tags$li(tags$b("p"), " ความน่าจะเป็นที่จะเกิดสิ่งที่สนใจ P(S) = p และ q = 1-p")
+                            tags$li(HTML("<b>&lambda; (Lambda)</b> คือ อัตราการเกิดเหตุการณ์เฉลี่ยที่คาดว่าจะพบ (คำนวณจาก n &times; p)")),
+                            tags$li(HTML("<b>x</b> คือ จำนวนเศษแก้วเป้าหมายที่สนใจ")),
+                            tags$li(HTML("<b>e</b> คือ ค่าคงที่ทางคณิตศาสตร์ (ประมาณ 2.71828)"))
                     )
                 )
               ),
               fluidRow(
                 box(title = "เครื่องมือจำลองสถานการณ์", width = 4, status = "warning", solidHeader = TRUE,
-                    selectInput("bino_type", "เลือกประเภทแก้วเป้าหมาย:", 
+                    selectInput("pois_type", "เลือกประเภทแก้วเป้าหมาย:", 
                                 choices = c("Building_Win_Float", "Building_Win_NonFloat", "Vehicle_Win", "Containers", "Tableware", "Headlamps")),
-                    numericInput("bino_n", "จำนวนที่สุ่มเก็บมาทั้งหมด (n):", value = 10, min = 1, step = 1),
-                    numericInput("bino_x", "จำนวนเป้าหมายที่คาดว่าจะพบ (x):", value = 3, min = 0, step = 1),
+                    numericInput("pois_n", "จำนวนที่สุ่มเก็บมาทั้งหมด (n):", value = 50, min = 1, step = 1),
+                    numericInput("pois_x", "จำนวนเป้าหมายที่สนใจ (x):", value = 3, min = 0, step = 1),
                     hr(),
-                    # ปุ่มกดคำนวณ!
-                    actionButton("calc_btn", " คำนวณความน่าจะเป็น", icon = icon("calculator"), width = "100%"),
+                    # ปุ่มกดคำนวณ
+                    actionButton("calc_btn", " คำนวณความน่าจะเป็น", icon = icon("calculator"), width = "100%", style="background-color: #27ae60; color: white; border-radius: 5px; border: none; font-size: 16px; font-weight: bold; padding: 10px;"),
                     hr(),
-                    uiOutput("bino_p_info")
+                    uiOutput("pois_p_info")
                 ),
-                box(title = "ผลลัพธ์และกราฟการแจกแจง", width = 8, status = "success", solidHeader = TRUE,
-                    uiOutput("bino_result_text"),
-                    plotOutput("bino_plot", height = "350px")
+                box(title = "ผลลัพธ์และกราฟการแจกแจงแบบปัวซง", width = 8, status = "success", solidHeader = TRUE,
+                    uiOutput("pois_result_text"),
+                    plotOutput("pois_plot", height = "350px")
                 )
               )
       ) 
@@ -148,13 +150,13 @@ ui <- dashboardPage(
 
 # [4] Server
 server <- function(input, output, session) {
-
+  
   output$rawDataTable <- renderDataTable({
     glass_data
   }, options = list(
-    pageLength = 5,       # แสดงหน้าละ 5 แถว
-    scrollX = TRUE,       # ให้เลื่อนซ้าย-ขวาได้ กรณีคอลัมน์เยอะ
-    searching = TRUE      # เปิดโหมดค้นหา
+    pageLength = 5,
+    scrollX = TRUE,
+    searching = TRUE
   ))
   
   output$downloadData <- downloadHandler(
@@ -174,24 +176,30 @@ server <- function(input, output, session) {
       labs(y = "จำนวน (Count)", x = "") + theme(axis.text.x = element_text(angle = 30, hjust = 1))
   })
   
+  # --- ระบบคำนวณปัวซง ---
   observeEvent(input$calc_btn, {
     
-    p_val <- sum(glass_data$Type == input$bino_type, na.rm = TRUE) / nrow(glass_data)
+    # 1. คำนวณความน่าจะเป็นตั้งต้น (p) จากชุดข้อมูล
+    p_val <- sum(glass_data$Type == input$pois_type, na.rm = TRUE) / nrow(glass_data)
     
-    output$bino_p_info <- renderUI({
-      p(style = "color: #e67e22; font-weight: bold; font-size: 16px;", 
-        paste("ค่า p (Probability) ของ", input$bino_type, "คือ:", round(p_val, 4)))
+    # 2. คำนวณค่าเฉลี่ย Lambda = n * p
+    lambda_val <- input$pois_n * p_val
+    
+    # แสดงค่า Lambda ให้ผู้ใช้เห็น
+    output$pois_p_info <- renderUI({
+      tagList(
+        p(style = "color: #7f8c8d; font-size: 14px;", 
+          paste("โอกาสพบแก้วประเภทนี้ (p) ≈", round(p_val, 4))),
+        p(style = "color: #e67e22; font-weight: bold; font-size: 18px;", 
+          paste("ค่าเฉลี่ยที่คาดว่าจะพบ (λ) =", round(lambda_val, 4), "ชิ้น"))
+      )
     })
     
-    output$bino_result_text <- renderUI({
-      n <- input$bino_n
-      x <- input$bino_x
+    # คำนวณผลลัพธ์ ปัวซง dpois()
+    output$pois_result_text <- renderUI({
+      x <- input$pois_x
       
-      if(x > n) {
-        return(h4(style = "color: red; font-weight: bold;", "❌ ข้อผิดพลาด: ค่า x ต้องไม่มากกว่า n"))
-      }
-      
-      prob_exact <- dbinom(x, n, p_val)
+      prob_exact <- dpois(x, lambda_val)
       
       tagList(
         h3(style = "color: #27ae60; font-weight: bold;", 
@@ -201,26 +209,32 @@ server <- function(input, output, session) {
       )
     })
     
-    output$bino_plot <- renderPlot({
-      n <- input$bino_n
-      x <- input$bino_x
+    # พล็อตกราฟปัวซง
+    output$pois_plot <- renderPlot({
+      x <- input$pois_x
       
-      if(x > n) return(NULL)
+      # หาขอบเขตแกน x ที่เหมาะสมสำหรับพล็อตกราฟให้สวยงาม
+      max_x_plot <- max(15, x + 5, ceiling(lambda_val + 3 * sqrt(lambda_val)))
+      x_range <- 0:max_x_plot
       
-      df_bino <- data.frame(Successes = 0:n, Probability = dbinom(0:n, n, p_val))
-      df_bino$Highlight <- ifelse(df_bino$Successes == x, "เป้าหมาย (x)", "ค่าอื่นๆ")
+      # ใช้สูตร dpois
+      df_pois <- data.frame(
+        Successes = x_range, 
+        Probability = dpois(x_range, lambda_val)
+      )
+      df_pois$Highlight <- ifelse(df_pois$Successes == x, "เป้าหมาย (x)", "ค่าอื่นๆ")
       
-      ggplot(df_bino, aes(x = factor(Successes), y = Probability, fill = Highlight)) +
+      ggplot(df_pois, aes(x = factor(Successes), y = Probability, fill = Highlight)) +
         geom_bar(stat = "identity", color = "black", alpha = 0.8) +
         scale_fill_manual(values = c("ค่าอื่นๆ" = "steelblue", "เป้าหมาย (x)" = "#e74c3c")) +
-        geom_text(aes(label = round(Probability, 3)), vjust = -0.5, size = 4) +
+        geom_text(aes(label = ifelse(Probability > 0.005, round(Probability, 3), "")), vjust = -0.5, size = 3.5) +
         theme_minimal() +
-        labs(title = paste("กราฟการแจกแจงแบบทวินาม: B(n =", n, ", p =", round(p_val, 3), ")"),
+        labs(title = paste("กราฟการแจกแจงแบบปัวซง: Poi(λ =", round(lambda_val, 3), ")"),
              x = "จำนวนเศษแก้วที่พบ (x)", y = "ความน่าจะเป็น") +
         theme(legend.position = "bottom", legend.title = element_blank(), text = element_text(size = 14))
     })
   })
 }
 
-# [5] รันแอป
+# [5] รันแอปพลิเคชัน
 shinyApp(ui = ui, server = server)
