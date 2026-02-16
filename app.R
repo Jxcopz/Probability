@@ -3,14 +3,23 @@ library(shinydashboard)
 library(ggplot2)
 library(dplyr)
 library(tidyr)
+library(bslib)
 
-# [2] โหลดข้อมูล
+# [2] โหลดข้อมูลจากไฟล์ glass.csv
 filename <- "glass.csv"
-glass_data <- read.csv("glass.csv")
-glass_data$Type <- factor(glass_data$Type, 
-                          levels = c(1, 2, 3, 5, 6, 7),
-                          labels = c("Building_Win_Float", "Building_Win_NonFloat", 
-                                     "Vehicle_Win", "Containers", "Tableware", "Headlamps"))
+if (file.exists(filename)) {
+  glass_data <- read.csv(filename)
+  if("Type" %in% names(glass_data)) {
+    glass_data$Type <- factor(glass_data$Type, 
+                              levels = c(1, 2, 3, 5, 6, 7),
+                              labels = c("Building_Win_Float", "Building_Win_NonFloat", 
+                                         "Vehicle_Win", "Containers", "Tableware", "Headlamps"))
+  }
+} else {
+  # ข้อมูลจำลองกันแอปพังกรณีหาไฟล์ไม่เจอ
+  glass_data <- data.frame(Type = factor(sample(c("Building_Win_Float", "Building_Win_NonFloat"), 100, replace=T)), RI=runif(100))
+}
+
 # [3] UI - Dashboard Layout
 ui <- dashboardPage(
   skin = "blue",
@@ -76,7 +85,9 @@ ui <- dashboardPage(
       tabItem(tabName = "overview",
               fluidRow(
                 box(title = "ตารางแสดงข้อมูลในไฟล์ (Raw Data)", width = 12, status = "success", solidHeader = TRUE,
-                    dataTableOutput("rawDataTable")) # เปลี่ยนมาใช้ dataTableOutput
+                    # --- ส่วนที่ 1: เพิ่มปุ่มกดดาวน์โหลดตรงนี้ ---
+                    downloadButton("downloadData", " ดาวน์โหลดไฟล์ CSV", style = "margin-bottom: 15px; background-color: #27ae60; color: white; border: none;"),
+                    dataTableOutput("rawDataTable")) 
               ),
               fluidRow(
                 box(title = "กราฟแสดงจำนวนข้อมูลในแต่ละประเภท", width = 12, status = "primary", solidHeader = TRUE, 
@@ -128,7 +139,7 @@ ui <- dashboardPage(
                     numericInput("bino_x", "จำนวนเป้าหมายที่คาดว่าจะพบ (x):", value = 3, min = 0, step = 1),
                     hr(),
                     # ปุ่มกดคำนวณ!
-                    actionButton("calc_btn", " คำนวณความน่าจะเป็น", icon = icon("calculator"), width = "100%"),
+                    actionButton("calc_btn", " คำนวณความน่าจะเป็น", icon = icon("calculator"), width = "100%", style="background-color: #27ae60; color: white; border-radius: 5px; border: none; font-size: 16px; font-weight: bold; padding: 10px;"),
                     hr(),
                     uiOutput("bino_p_info")
                 ),
@@ -144,7 +155,7 @@ ui <- dashboardPage(
 
 # [4] Server
 server <- function(input, output, session) {
-
+  
   output$rawDataTable <- renderDataTable({
     glass_data
   }, options = list(
@@ -152,6 +163,17 @@ server <- function(input, output, session) {
     scrollX = TRUE,       # ให้เลื่อนซ้าย-ขวาได้ กรณีคอลัมน์เยอะ
     searching = TRUE      # เปิดโหมดค้นหา
   ))
+  
+  # --- ส่วนที่ 2: เพิ่มฟังก์ชันดาวน์โหลดไฟล์ตรงนี้ ---
+  output$downloadData <- downloadHandler(
+    filename = function() {
+      paste("Glass_Identification_Data_", Sys.Date(), ".csv", sep = "")
+    },
+    content = function(file) {
+      write.csv(glass_data, file, row.names = FALSE)
+    }
+  )
+  # -----------------------------------------------
   
   output$distPlot <- renderPlot({
     ggplot(glass_data, aes(x = Type, fill = Type)) + geom_bar() +
@@ -209,5 +231,5 @@ server <- function(input, output, session) {
   })
 }
 
-# [5] รันแอป
+# [5] รันแอปพลิเคชัน
 shinyApp(ui = ui, server = server)
